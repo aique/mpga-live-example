@@ -9,7 +9,7 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * @ORM\Entity(repositoryClass=App\Repository\CategoryRepository::class)
- * @Serializer\ExclusionPolicy(policy="all")
+ * @Serializer\ExclusionPolicy(policy="none")
  */
 class Category
 {
@@ -17,7 +17,6 @@ class Category
      * @ORM\Id()
      * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
-     * @Serializer\Expose()
      */
     private int $id;
 
@@ -28,29 +27,28 @@ class Category
 
     /**
      * @ORM\Column(type="boolean", options={"default" : false})
-     * @Serializer\Expose()
      */
     private bool $enabled;
 
     /**
      * @ORM\Column(type="string", length="255")
-     * @Serializer\Expose()
      */
     private string $name;
 
     /**
      * @ORM\Column(type="string", length="255", unique=true)
-     * @Serializer\Expose()
      */
     private string $slug;
 
     /**
      * @ORM\Column(type="datetime")
+     * @Serializer\Type("DateTime<'d-m-Y H:i:s'>")
      */
     private \DateTime $created;
 
     /**
      * @ORM\Column(type="datetime", nullable=true)
+     * @Serializer\Type("DateTime<'d-m-Y H:i:s'>")
      */
     private \DateTime $updated;
 
@@ -64,12 +62,14 @@ class Category
         $this->initialize();
     }
 
-    public function initialize(): void {
+    public function initialize(): self {
         $this
             ->generateSlug()
             ->generateUuid()
             ->generateCreated()
         ;
+
+        return $this;
     }
 
     public function getId(): int {

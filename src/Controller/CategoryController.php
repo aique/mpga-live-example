@@ -33,10 +33,9 @@ class CategoryController extends AbstractController
      */
     public function categories(): Response
     {
-        return new Response(
+        return JsonResponse::fromJsonString(
             $this->serializer->serialize(
-                $this->repository->findAll(),
-                'json'
+                $this->repository->findAll(), 'json'
             )
         );
     }
@@ -49,12 +48,12 @@ class CategoryController extends AbstractController
         $category = $this->repository->find($id);
 
         if (!$category) {
-            return new JsonResponse(
-                null, Response::HTTP_NOT_FOUND
+            return new Response(
+                '', Response::HTTP_NOT_FOUND
             );
         }
 
-        return new Response(
+        return JsonResponse::fromJsonString(
             $this->serializer->serialize(
                 $category, 'json'
             )
@@ -82,16 +81,16 @@ class CategoryController extends AbstractController
         $category = $this->deserializeCategory($content);
 
         if (!$category) {
-            return new JsonResponse(
-                null, Response::HTTP_INTERNAL_SERVER_ERROR
+            return new Response(
+                '', Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
 
         $this->entityManager->persist($category);
         $this->entityManager->flush();
 
-        return new JsonResponse(
-            null, Response::HTTP_NO_CONTENT
+        return new Response(
+            '', Response::HTTP_NO_CONTENT
         );
     }
 
@@ -107,8 +106,8 @@ class CategoryController extends AbstractController
         $category = $this->repository->find($id);
 
         if (!$category) {
-            return new JsonResponse(
-                null, Response::HTTP_NOT_FOUND
+            return new Response(
+                '', Response::HTTP_NOT_FOUND
             );
         }
 
@@ -128,8 +127,8 @@ class CategoryController extends AbstractController
         $updatedCategory = $this->deserializeCategory($content);
 
         if (!$updatedCategory) {
-            return new JsonResponse(
-                null, Response::HTTP_INTERNAL_SERVER_ERROR
+            return new Response(
+                '', Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
 
@@ -137,8 +136,8 @@ class CategoryController extends AbstractController
 
         $this->entityManager->flush();
 
-        return new JsonResponse(
-            null, Response::HTTP_NO_CONTENT
+        return new Response(
+            '', Response::HTTP_NO_CONTENT
         );
     }
 
@@ -149,17 +148,35 @@ class CategoryController extends AbstractController
         $category = $this->repository->find($id);
 
         if (!$category) {
-            return new JsonResponse(
-                null, Response::HTTP_NOT_FOUND
+            return new Response(
+                '', Response::HTTP_NOT_FOUND
             );
         }
 
         $this->entityManager->remove($category);
         $this->entityManager->flush();
 
-        return new JsonResponse(
-            null, Response::HTTP_NO_CONTENT
+        return new Response(
+            '', Response::HTTP_NO_CONTENT
         );
+    }
+
+    /**
+     * @Route("/categories", methods={"OPTIONS"}, name="categories_options")
+     */
+    public function categoriesOptions(): Response {
+        return new Response('', Response::HTTP_NO_CONTENT, [
+            'Access-Control-Allow-Methods' => 'OPTIONS, GET, POST',
+        ]);
+    }
+
+    /**
+     * @Route("/categories/{id}", methods={"OPTIONS"}, name="category_item_options", requirements={"id"="\d+"})
+     */
+    public function categoryItemOptions(): Response {
+        return new Response('', Response::HTTP_NO_CONTENT, [
+            'Access-Control-Allow-Methods' => 'OPTIONS, PUT, DELETE',
+        ]);
     }
 
     private function deserializeCategory($content): ?Category {
@@ -171,8 +188,6 @@ class CategoryController extends AbstractController
             return null;
         }
 
-        $category->initialize();
-
-        return $category;
+        return $category->initialize();
     }
 }
