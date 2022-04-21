@@ -81,8 +81,9 @@ class CategoryController extends AbstractController
         $category = $this->deserializeCategory($content);
 
         if (!$category) {
-            return new Response(
-                '', Response::HTTP_INTERNAL_SERVER_ERROR
+            return new JsonResponse(
+                $error->createResponseFromMessage('Deserialization error'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
 
@@ -127,8 +128,9 @@ class CategoryController extends AbstractController
         $updatedCategory = $this->deserializeCategory($content);
 
         if (!$updatedCategory) {
-            return new Response(
-                '', Response::HTTP_INTERNAL_SERVER_ERROR
+            return new JsonResponse(
+                $error->createResponseFromMessage('Deserialization error'),
+                Response::HTTP_INTERNAL_SERVER_ERROR
             );
         }
 
