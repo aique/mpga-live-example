@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Cache\Cache;
 use App\Entity\Category;
 use App\Error\JsonResponseError;
+use App\Pagination\PaginatorBuilder;
 use App\Repository\CategoryRepository;
 use App\Validation\Category\CreateCategoryValidator;
 use Doctrine\ORM\EntityManagerInterface;
@@ -14,29 +16,47 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class CategoryController extends AbstractController
 {
-    private EntityManagerInterface $entityManager;
-    private CategoryRepository $repository;
+    private Cache $cache;
     private Serializer $serializer;
+    private CategoryRepository $repository;
+    private PaginatorBuilder $paginatorBuilder;
+    private EntityManagerInterface $entityManager;
 
-    public function __construct(EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        Cache $cache,
+        PaginatorBuilder $paginatorBuilder,
+        EntityManagerInterface $entityManager
+    ) {
+        $this->cache = $cache;
+        $this->paginatorBuilder = $paginatorBuilder;
+        $this->serializer = SerializerBuilder::create()->build();
         $this->entityManager = $entityManager;
         $this->repository = $this->entityManager->getRepository(Category::class);
-        $this->serializer = SerializerBuilder::create()->build();
     }
 
     /**
      * @Route("/categories", methods={"GET"}, name="category_list")
      */
-    public function categories(): Response
+    public function categories(Request $request): Response
     {
+        $paginator = $this->paginatorBuilder->build(Category::class, $request);
+
+        $data = $this->cache->getPaginatedCategories($paginator, function(ItemInterface $item) use($paginator) {
+            $item->expiresAfter(Cache::DEFAULT_TIMEOUT);
+
+            return $this->serializer->serialize(
+                $paginator->paginate(), 'json'
+            );
+        });
+
+        $headers = $paginator->getHeaders();
+
         return JsonResponse::fromJsonString(
-            $this->serializer->serialize(
-                $this->repository->findAll(), 'json'
-            )
+            $data, Response::HTTP_OK, $headers
         );
     }
 
@@ -45,19 +65,21 @@ class CategoryController extends AbstractController
      */
     public function category(int $id): Response
     {
-        $category = $this->repository->find($id);
+        $data = $this->cache->getCategory($id, function(ItemInterface $item) use($id) {
+            $item->expiresAfter(Cache::DEFAULT_TIMEOUT);
 
-        if (!$category) {
+            return $this->serializer->serialize(
+                $this->repository->find($id), 'json'
+            );
+        });
+
+        if (!$data) {
             return new Response(
                 '', Response::HTTP_NOT_FOUND
             );
         }
 
-        return JsonResponse::fromJsonString(
-            $this->serializer->serialize(
-                $category, 'json'
-            )
-        );
+        return JsonResponse::fromJsonString($data);
     }
 
     /**
