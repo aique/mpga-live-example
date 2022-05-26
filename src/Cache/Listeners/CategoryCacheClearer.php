@@ -14,11 +14,25 @@ class CategoryCacheClearer
         $this->cache = $cache;
     }
 
-    public function clearCategoryFromCache(Category $category, LifecycleEventArgs $event): void {
+    public function persistCategoryFromCache(Category $category, LifecycleEventArgs $event): void {
+        $this->cache->clearPaginatedCategories();
+        $this->cache->clearNumCategories();
+    }
+
+    public function updateCategoryFromCache(Category $category, LifecycleEventArgs $event): void {
         $this->cache->clearCategory(
             $category->getId()
         );
 
         $this->cache->clearPaginatedCategories();
+    }
+
+    public function deleteCategoryFromCache(Category $category, LifecycleEventArgs $event): void {
+        $this->cache->clearCategory(
+            $category->getId()
+        );
+
+        $this->cache->clearPaginatedCategories();
+        $this->cache->clearNumCategories();
     }
 }

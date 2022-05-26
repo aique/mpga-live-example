@@ -2,17 +2,21 @@
 
 namespace App\Pagination;
 
+use App\Cache\Cache;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 
 class Paginator
 {
+    private Cache $cache;
     private PaginationConfig $paginationConfig;
     private ServiceEntityRepository $repository;
 
     public function __construct(
+        Cache $cache,
         PaginationConfig $paginationConfig,
         ServiceEntityRepository $repository
     ) {
+        $this->cache = $cache;
         $this->paginationConfig = $paginationConfig;
         $this->repository = $repository;
     }
@@ -22,12 +26,22 @@ class Paginator
     }
 
     public function paginate(): array {
+        $currentPage = $this->paginationConfig->getCurrentPage();
+
+        if ($this->outOfRange($currentPage)) {
+            throw new PaginationOutOfRangeException();
+        }
+
         $offset = $this->paginationConfig->getOffset();
         $itemsPerPage = $this->paginationConfig->getItemsPerPage();
 
         return $this->repository->findBy(
             [], null, $itemsPerPage, $offset
         );
+    }
+
+    private function outOfRange(int $currentPage): bool {
+        return $currentPage < 1 || $currentPage > $this->getNumPages();
     }
 
     public function getHeaders(): array {
@@ -40,7 +54,9 @@ class Paginator
     }
 
     private function getNumItems(): int {
-        return count($this->repository->findAll());
+        return $this->cache->getNumCategories(function() {
+            return count($this->repository->findAll());
+        });
     }
 
     private function getNumPages(): int {

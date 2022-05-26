@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Cache\Cache;
 use App\Entity\Category;
 use App\Error\JsonResponseError;
+use App\Pagination\PaginationOutOfRangeException;
+use App\Pagination\Paginator;
 use App\Pagination\PaginatorBuilder;
 use App\Repository\CategoryRepository;
 use App\Validation\Category\CreateCategoryValidator;
@@ -45,19 +47,29 @@ class CategoryController extends AbstractController
     {
         $paginator = $this->paginatorBuilder->build(Category::class, $request);
 
-        $data = $this->cache->getPaginatedCategories($paginator, function(ItemInterface $item) use($paginator) {
-            $item->expiresAfter(Cache::DEFAULT_TIMEOUT);
-
-            return $this->serializer->serialize(
-                $paginator->paginate(), 'json'
+        try {
+            $data = $this->getCategories($paginator);
+        } catch (PaginationOutOfRangeException $ex) {
+            return new Response(
+                '', Response::HTTP_NOT_FOUND
             );
-        });
+        }
 
         $headers = $paginator->getHeaders();
 
         return JsonResponse::fromJsonString(
             $data, Response::HTTP_OK, $headers
         );
+    }
+
+    private function getCategories(Paginator $paginator): string {
+        return $this->cache->getPaginatedCategories($paginator, function(ItemInterface $item) use($paginator) {
+            $item->expiresAfter(Cache::DEFAULT_TIMEOUT);
+
+            return $this->serializer->serialize(
+                $paginator->paginate(), 'json'
+            );
+        });
     }
 
     /**

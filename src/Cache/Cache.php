@@ -37,6 +37,12 @@ class Cache
         );
     }
 
+    public function getNumCategories(callable $callback): int {
+        return $this->client->get(
+            $this->numCategoriesKey(), $callback
+        );
+    }
+
     public function clearPaginatedCategories(): void {
         $this->client->clear('categories_list');
     }
@@ -44,6 +50,12 @@ class Cache
     public function clearCategory(int $id): void {
         $this->client->clear(
             $this->categoryKey($id)
+        );
+    }
+
+    public function clearNumCategories(): void {
+        $this->client->clear(
+            $this->numCategoriesKey()
         );
     }
 
@@ -61,5 +73,9 @@ class Cache
         return sprintf(
             'category_detail_%s', $id
         );
+    }
+
+    private function numCategoriesKey(): string {
+        return 'categories_total_num';
     }
 }

@@ -49,7 +49,7 @@ class CsvImporter
 
     private function parseCategory(array $line): Category {
         return new Category(
-            'test', true
+            $line[0], true
         );
     }
 }
